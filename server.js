@@ -479,11 +479,33 @@ const server = http.createServer((req, res) => {
     }
 });
 
-server.listen(PORT, () => {
+const os = require('os');
+
+function getLocalIPAddresses() {
+    const interfaces = os.networkInterfaces();
+    const ips = [];
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                ips.push(iface.address);
+            }
+        }
+    }
+    return ips;
+}
+
+server.listen(PORT, '0.0.0.0', () => {
+    const localIPs = getLocalIPAddresses();
     console.log('='.repeat(65));
     console.log('  🎯 Node.js PowerPoint AI Voice & Chat Assistant');
     console.log('='.repeat(65));
-    console.log(`[*] Server running at: http://127.0.0.1:${PORT}`);
-    console.log(`[*] Presentations folder: ${PRESENTATIONS_DIR}`);
+    console.log(`[*] Localhost:        http://127.0.0.1:${PORT}`);
+    if (localIPs.length > 0) {
+        localIPs.forEach(ip => {
+            console.log(`[*] Local Network IP: http://${ip}:${PORT}`);
+        });
+    }
+    console.log(`[*] Presentations:    ${PRESENTATIONS_DIR}`);
     console.log('='.repeat(65));
 });
+
