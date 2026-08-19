@@ -1,13 +1,15 @@
-/**
- * OpenAI Voice / Realtime Agent Integration for Remote PowerPoint Controller
- * 
- * Instructions:
- * 1. Place this file or copy the tools/handlers into your OpenAI Voice Agent project.
- * 2. Set PRESENTATION_PC_URL to the IP address of the PC running the PowerPoint server (e.g. 'http://192.168.1.15:3000').
- */
+'use strict';
 
-// Replace with your Presentation PC's local IP address
-const PRESENTATION_PC_URL = process.env.PPT_SERVER_URL || 'http://192.168.1.15:3000';
+const nodeFetch = typeof fetch === 'function' ? fetch : require('node-fetch');
+
+// Default / fallback presentation PC URL
+let presentationServerUrl = process.env.PPT_SERVER_URL || 'http://192.168.1.15:3000';
+
+function setPresentationServerUrl(url) {
+    if (url && typeof url === 'string') {
+        presentationServerUrl = url.replace(/\/+$/, '');
+    }
+}
 
 /**
  * 1. OpenAI Function Tool Definitions
@@ -17,7 +19,7 @@ const pptTools = [
     {
         type: "function",
         name: "open_presentation",
-        description: "Open a PowerPoint presentation on the screen. Can specify presentation name, index number (1, 2, 3), or ordinals ('first', 'second', '3rd', 'last').",
+        description: "Open a PowerPoint presentation on the connected presentation PC. Can specify presentation name, index number (1, 2, 3), or ordinals ('first', 'second', '3rd', 'last').",
         parameters: {
             type: "object",
             properties: {
@@ -31,7 +33,7 @@ const pptTools = [
     {
         type: "function",
         name: "next_slide",
-        description: "Advance to the next slide in the active PowerPoint presentation.",
+        description: "Advance to the next slide in the active PowerPoint presentation on the presentation PC.",
         parameters: {
             type: "object",
             properties: {}
@@ -40,7 +42,7 @@ const pptTools = [
     {
         type: "function",
         name: "previous_slide",
-        description: "Go back to the previous slide in the active PowerPoint presentation.",
+        description: "Go back to the previous slide in the active PowerPoint presentation on the presentation PC.",
         parameters: {
             type: "object",
             properties: {}
@@ -49,7 +51,7 @@ const pptTools = [
     {
         type: "function",
         name: "goto_slide",
-        description: "Jump directly to a specific slide number in the active presentation.",
+        description: "Jump directly to a specific slide number in the active presentation on the presentation PC.",
         parameters: {
             type: "object",
             properties: {
@@ -73,7 +75,7 @@ const pptTools = [
     {
         type: "function",
         name: "start_slideshow",
-        description: "Start or resume fullscreen presentation mode.",
+        description: "Start or resume fullscreen presentation mode on the presentation PC.",
         parameters: {
             type: "object",
             properties: {}
@@ -82,7 +84,7 @@ const pptTools = [
     {
         type: "function",
         name: "stop_slideshow",
-        description: "Exit or stop the fullscreen presentation mode.",
+        description: "Exit or stop the fullscreen presentation mode on the presentation PC.",
         parameters: {
             type: "object",
             properties: {}
@@ -91,7 +93,7 @@ const pptTools = [
     {
         type: "function",
         name: "toggle_blackout",
-        description: "Toggle screen blackout on/off during a presentation.",
+        description: "Toggle screen blackout on/off during a presentation on the presentation PC.",
         parameters: {
             type: "object",
             properties: {}
@@ -103,9 +105,10 @@ const pptTools = [
  * 2. Remote API Dispatcher
  * Calls the Presentation PC HTTP API across the local network
  */
-async function callPresentationServer(action, params = {}) {
+async function callPresentationServer(action, params = {}, customServerUrl = null) {
+    const targetUrl = (customServerUrl || presentationServerUrl || 'http://127.0.0.1:3000').replace(/\/+$/, '');
     try {
-        const response = await fetch(`${PRESENTATION_PC_URL}/api/action`, {
+        const response = await nodeFetch(`${targetUrl}/api/action`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, params })
@@ -114,7 +117,10 @@ async function callPresentationServer(action, params = {}) {
         return data;
     } catch (error) {
         console.error(`[PPT Remote Error] Failed to execute '${action}':`, error.message);
-        return { success: false, error: `Could not connect to Presentation PC at ${PRESENTATION_PC_URL}. Verify it is running.` };
+        return {
+            success: false,
+            error: `Could not connect to Presentation PC at ${targetUrl}. Verify PPTControl is running on that machine.`
+        };
     }
 }
 
@@ -122,47 +128,53 @@ async function callPresentationServer(action, params = {}) {
  * 3. OpenAI Tool Call Handler
  * Call this function whenever OpenAI returns a function call
  */
-async function handleOpenAIToolCall(toolName, args = {}) {
-    console.log(`[OpenAI Voice Agent] Executing tool: ${toolName}`, args);
+async function handleOpenAIToolCall(toolName, args = {}, customServerUrl = null) {
+    const targetUrl = (customServerUrl || presentationServerUrl || 'http://127.0.0.1:3000').replace(/\/+$/, '');
+    console.log(`[OpenAI Voice Agent] Executing PPT tool: ${toolName} at ${targetUrl}`, args);
 
     switch (toolName) {
         case "open_presentation":
-            return await callPresentationServer('open', { target: args.target });
+            return await callPresentationServer('open', { target: args.target }, targetUrl);
 
         case "next_slide":
-            return await callPresentationServer('next');
+            return await callPresentationServer('next', {}, targetUrl);
 
         case "previous_slide":
-            return await callPresentationServer('prev');
+            return await callPresentationServer('prev', {}, targetUrl);
 
         case "goto_slide":
-            return await callPresentationServer('goto', { slide: args.slide_number });
+            return await callPresentationServer('goto', { slide: args.slide_number }, targetUrl);
 
         case "list_presentations":
             try {
-                const res = await fetch(`${PRESENTATION_PC_URL}/api/presentations`);
+                const res = await nodeFetch(`${targetUrl}/api/presentations`);
                 const data = await res.json();
                 return data;
             } catch (err) {
-                return { success: false, error: err.message };
+                return {
+                    success: false,
+                    error: `Could not connect to Presentation PC at ${targetUrl}: ${err.message}`
+                };
             }
 
         case "start_slideshow":
-            return await callPresentationServer('start_show');
+            return await callPresentationServer('start_show', {}, targetUrl);
 
         case "stop_slideshow":
-            return await callPresentationServer('stop_show');
+            return await callPresentationServer('stop_show', {}, targetUrl);
 
         case "toggle_blackout":
-            return await callPresentationServer('blank');
+            return await callPresentationServer('blank', {}, targetUrl);
 
         default:
-            return { error: `Unknown tool name: ${toolName}` };
+            return { error: `Unknown PPT tool name: ${toolName}` };
     }
 }
 
 module.exports = {
     pptTools,
     handleOpenAIToolCall,
-    callPresentationServer
+    callPresentationServer,
+    setPresentationServerUrl
 };
+
