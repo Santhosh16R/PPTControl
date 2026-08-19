@@ -1,0 +1,12 @@
+{
+  "name": "pptcontrol",
+  "version": "1.0.0",
+  "description": "Control your Microsoft PowerPoint presentations hands-free using natural **Voice commands** or interactive **Chat messages**.",
+  "main": "test_node_control.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerPoint AI Presenter | Voice & Chat Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="top-nav">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                        <polygon points="10 8 16 11 10 14 10 8" fill="currentColor"></polygon>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>PPT Voice & Chat Assistant</h1>
+                    <span class="badge" id="ppt-status-badge">Presenter Active</span>
+                </div>
+            </div>
+
+            <!-- Active Deck Status HUD -->
+            <div class="deck-hud" id="deck-hud">
+                <div class="hud-deck-info">
+                    <span class="hud-label">CURRENT PRESENTATION</span>
+                    <span class="hud-name" id="hud-deck-name">Sample_AI_Presentation.pptx</span>
+                </div>
+                <div class="hud-slide-counter">
+                    <span class="slide-num" id="hud-slide-num">1</span>
+                    <span class="slide-total" id="hud-slide-total">/ 5</span>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="header-actions">
+                <button class="icon-btn active" id="tts-toggle-btn" title="Toggle Spoken Voice Feedback">
+                    <svg id="tts-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <span id="tts-status-text">Voice Reply: ON</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="main-layout">
+            
+            <!-- Left Panel: Presentations Library & Folder -->
+            <aside class="sidebar-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <h2>Presentations Library</h2>
+                    </div>
+                    <button class="btn-sm" id="refresh-decks-btn" title="Refresh folder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Folder selector -->
+                <div class="folder-bar">
+                    <div class="folder-input-wrap">
+                        <input type="text" id="folder-path-input" placeholder="Folder path..." />
+                        <button id="set-folder-btn">Set</button>
+                    </div>
+                    <small class="folder-hint">Drop your <code>.pptx</code> files in this folder.</small>
+                </div>
+
+                <!-- Presentations List -->
+                <div class="deck-list-container" id="deck-list-container">
+                    <div class="empty-state" id="deck-list-loading">
+                        <div class="spinner"></div>
+                        <p>Loading presentations...</p>
+                    </div>
+                </div>
+
+                <!-- Quick Remote Box -->
+                <div class="quick-controls-box">
+                    <div class="box-title">Presenter Controls</div>
+                    <div class="remote-grid">
+                        <button class="remote-btn" id="btn-first" title="First Slide (Home)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                        </button>
+                        <button class="remote-btn btn-primary" id="btn-prev" title="Previous Slide (Left Arrow)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            <span>Back</span>
+                        </button>
+                        <button class="remote-btn btn-primary" id="btn-next" title="Next Slide (Right Arrow / Space)">
+                            <span>Next</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                        <button class="remote-btn" id="btn-last" title="Last Slide (End)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                        </button>
+                    </div>
+                    <div class="remote-sub-grid">
+                        <button class="sub-btn" id="btn-fullscreen-stage" title="Fullscreen Presentation Mode">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                            <span>Fullscreen</span>
+                        </button>
+                        <button class="sub-btn" id="btn-stop-show" title="Exit Presentation">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"></rect></svg>
+                            <span>Exit</span>
+                        </button>
+                        <button class="sub-btn" id="btn-blank" title="Blackout Screen">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+                            <span>Blackout</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center: Interactive Live Presentation Stage -->
+            <section class="stage-panel" id="stage-panel">
+                <div class="stage-header">
+                    <div class="stage-title-wrap">
+                        <span class="stage-tag">LIVE SLIDE STAGE</span>
+                        <span class="stage-file-name" id="stage-deck-title">Sample_AI_Presentation.pptx</span>
+                    </div>
+                    <button class="stage-expand-btn" id="btn-toggle-fullscreen" title="Toggle Fullscreen Presentation Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                        <span>Full Screen Present</span>
+                    </button>
+                </div>
+
+                <!-- 16:9 Presentation Canvas Container -->
+                <div class="slide-viewport-wrapper">
+                    <div class="slide-canvas" id="slide-canvas">
+                        <div class="slide-content-layout" id="slide-content-layout">
+                            <div class="slide-header-box">
+                                <h1 class="slide-main-title" id="slide-main-title">Voice & Chat Controlled Presentation</h1>
+                                <p class="slide-sub-title" id="slide-sub-title">Smart PowerPoint Assistant</p>
+                            </div>
+                            <div class="slide-body-box" id="slide-body-box">
+                                <ul class="slide-bullet-list" id="slide-bullet-list">
+                                    <li>Say <strong>"Open the PPT"</strong> or <strong>"Next slide"</strong> to control presentations.</li>
+                                    <li>Microphone listening actively for commands.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Blackout Screen Overlay -->
+                        <div class="blackout-screen" id="blackout-screen" style="display: none;">
+                            <div class="blackout-hint">Screen Blackout Active (Say "Resume" or click to unblank)</div>
+                        </div>
+
+                        <!-- Slide Navigation Overlay Dots -->
+                        <div class="slide-footer-bar">
+                            <div class="slide-pagination" id="slide-pagination">
+                                <!-- Generated dots -->
+                            </div>
+                            <div class="slide-number-tag" id="slide-number-tag">Slide 1 of 5</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Voice Control Hub & Chat Assistant -->
+            <section class="assistant-panel">
+                
+                <!-- Voice Hub Card -->
+                <div class="voice-hub-card">
+                    <div class="voice-status-container">
+                        <div class="mic-visualizer" id="mic-visualizer">
+                            <div class="wave-ring ring-1"></div>
+                            <div class="wave-ring ring-2"></div>
+                            <button class="mic-button" id="mic-toggle-btn" title="Click to Start/Stop Listening">
+                                <svg id="mic-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="voice-meta">
+                            <div class="voice-state-title" id="mic-state-title">Voice Control: Standby</div>
+                            <p class="voice-state-sub" id="mic-state-sub">Click mic to start hands-free voice control</p>
+                        </div>
+                    </div>
+
+                    <div class="voice-options">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="continuous-mic-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">Hands-Free</span>
+                    </div>
+                </div>
+
+                <!-- Chat Conversation Stream -->
+                <div class="chat-thread" id="chat-thread">
+                    <div class="message system-msg">
+                        <div class="msg-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </div>
+                        <div class="msg-content">
+                            <p><strong>Ready to present!</strong> Say voice commands or type in chat.</p>
+                            <div class="suggestions-list">
+                                <button class="chip" onclick="sendQuickCommand('Open 1st PPT')">▶ "Open 1st PPT"</button>
+                                <button class="chip" onclick="sendQuickCommand('Open 2nd PPT')">▶ "Open 2nd PPT"</button>
+                                <button class="chip" onclick="sendQuickCommand('List presentations')">📋 "List presentations"</button>
+                                <button class="chip" onclick="sendQuickCommand('Next slide')">⏭ "Next slide"</button>
+                                <button class="chip" onclick="sendQuickCommand('Previous slide')">⏮ "Previous slide"</button>
+                                <button class="chip" onclick="sendQuickCommand('Go to slide 3')">🔢 "Go to slide 3"</button>
+                                <button class="chip" onclick="sendQuickCommand('Fullscreen')">🎬 "Fullscreen"</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interim Speech Transcript -->
+                <div class="interim-transcript-bar" id="interim-transcript-bar" style="display: none;">
+                    <span class="pulse-dot"></span>
+                    <span class="transcript-text" id="interim-transcript-text">Hearing: ...</span>
+                </div>
+
+                <!-- Chat Command Input Bar -->
+                <div class="chat-input-bar">
+                    <form id="chat-form" onsubmit="handleChatSubmit(event)">
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="chat-input" 
+                                placeholder="Type a command (e.g. 'open ppt', 'next slide', 'go to slide 4')..." 
+                                autocomplete="off"
+                            />
+                            <button type="submit" class="send-btn" id="send-btn" title="Send Command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
